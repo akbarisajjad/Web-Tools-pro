@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ویرایشگر کد آنلاین</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="editor-section">
+            <h2>ویرایشگر کد</h2>
+            <textarea id="code-input" placeholder="کد خود را اینجا وارد کنید..."></textarea>
+            <div class="button-group">
+                <button id="save-btn" class="btn save">ذخیره</button>
+                <button id="run-btn" class="btn enter">اجرا</button>
+                <button id="download-btn" class="btn download">دانلود</button>
+                <button id="exit-btn" class="btn exit">خروج</button>
+            </div>
+        </div>
+        <div class="preview-section">
+            <h2>پیش‌نمایش</h2>
+            <iframe id="preview"></iframe>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

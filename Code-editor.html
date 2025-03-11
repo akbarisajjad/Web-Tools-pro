@@ -7,27 +7,27 @@
 
     <!-- استایل CodeMirror -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.css">
     <style>
         .CodeMirror {
             width: 100%;
             height: 200px;
             border-radius: 10px;
             border: none;
-            background: #e0e0e0;
+            background: transparent; /* پس‌زمینه شفاف */
         }
 
+        .CodeMirror-scroll {
+            direction: rtl;
+        }
+
+        /* تنظیم عرض شماره خط‌ها */
         .CodeMirror-gutters {
-            width: 40px;
+            width: 40px; /* عرض به اندازه یک عدد دو رقمی */
         }
 
         .CodeMirror-linenumber {
-            min-width: 30px;
-            text-align: center;
-        }
-
-        .CodeMirror-lint-markers {
-            width: 16px;
+            min-width: 30px; /* عرض حداقلی برای شماره خط‌ها */
+            text-align: center; /* متن وسط‌چین شود */
         }
     </style>
 
@@ -69,8 +69,6 @@
 
         .button-group {
             margin-top: 10px;
-            display: flex;
-            gap: 10px;
         }
 
         .btn {
@@ -78,6 +76,7 @@
             border: none;
             border-radius: 10px;
             cursor: pointer;
+            margin-right: 10px;
             font-weight: bold;
             transition: all 0.3s ease;
             box-shadow: 4px 4px 8px #bebebe, -4px -4px 8px #ffffff;
@@ -92,9 +91,10 @@
         .exit { background-color: #d50000; color: #fff; }
         .download { background-color: #ff9800; color: #fff; }
 
+        /* افزایش فاصله بین زبانه‌ها */
         .tabs {
             display: flex;
-            gap: 20px;
+            gap: 20px; /* فاصله بین زبانه‌ها */
             margin-bottom: 10px;
         }
 
@@ -112,8 +112,11 @@
             color: #fff;
         }
 
+        /* استایل متن راهنما */
         .code-input {
             display: none;
+            font-weight: bold; /* متن بولد */
+            margin-bottom: 20px; /* فاصله بین بخش‌ها */
         }
 
         .code-input.active {
@@ -136,9 +139,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/markdown/markdown.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/javascript-lint.min.js"></script>
 </head>
 <body>
 
@@ -149,103 +149,115 @@
                 <button class="tab-btn active" data-tab="html">HTML</button>
                 <button class="tab-btn" data-tab="css">CSS</button>
                 <button class="tab-btn" data-tab="js">JavaScript</button>
-                <button class="tab-btn" data-tab="md">Markdown</button>
             </div>
-            <div id="html-input" class="code-input active"></div>
-            <div id="css-input" class="code-input"></div>
-            <div id="js-input" class="code-input"></div>
-            <div id="md-input" class="code-input"></div>
+            <div id="html-input" class="code-input active"><strong>کد HTML خود را وارد کنید...</strong></div>
+            <div id="css-input" class="code-input"><strong>کد CSS خود را وارد کنید...</strong></div>
+            <div id="js-input" class="code-input"><strong>کد JavaScript خود را وارد کنید...</strong></div>
             <div class="button-group">
                 <button id="save-btn" class="btn save">ذخیره</button>
                 <button id="run-btn" class="btn enter">اجرا</button>
-                <button id="undo-btn" class="btn">Undo</button>
-                <button id="redo-btn" class="btn">Redo</button>
                 <button id="download-btn" class="btn download">دانلود</button>
                 <button id="exit-btn" class="btn exit">خروج</button>
             </div>
-            <input type="file" id="file-upload" accept="image/*" style="margin-top: 10px;">
         </div>
         <div class="preview-section">
             <h2>پیش‌نمایش</h2>
-            <iframe id="preview" sandbox="allow-scripts"></iframe>
+            <iframe id="preview"></iframe>
         </div>
     </div>
 
     <script>
-        const editors = {
-            html: CodeMirror(document.getElementById('html-input'), { mode: "htmlmixed", lineNumbers: true, direction: "rtl" }),
-            css: CodeMirror(document.getElementById('css-input'), { mode: "css", lineNumbers: true, direction: "rtl" }),
-            js: CodeMirror(document.getElementById('js-input'), { mode: "javascript", lineNumbers: true, direction: "rtl", lint: true }),
-            md: CodeMirror(document.getElementById('md-input'), { mode: "markdown", lineNumbers: true, direction: "rtl" })
-        };
+        // فعال‌سازی CodeMirror برای هر زبانه
+        const htmlEditor = CodeMirror(document.getElementById('html-input'), {
+            mode: "htmlmixed",
+            lineNumbers: true,
+            theme: "default",
+            direction: "rtl",
+            lineNumberFormatter: (line) => line // شماره خط‌ها بدون تغییر نمایش داده شوند
+        });
 
-        // پیش‌نمایش زنده
-        Object.values(editors).forEach(editor => {
-            editor.on('change', () => {
-                const html = editors.html.getValue();
-                const css = `<style>${editors.css.getValue()}</style>`;
-                const js = `<script>${editors.js.getValue()}<\/script>`;
-                const md = editors.md.getValue();
-                const output = html + css + js + `<div>${md}</div>`;
-                const preview = document.getElementById('preview');
-                preview.contentDocument.open();
-                preview.contentDocument.write(output);
-                preview.contentDocument.close();
-            });
+        const cssEditor = CodeMirror(document.getElementById('css-input'), {
+            mode: "css",
+            lineNumbers: true,
+            theme: "default",
+            direction: "rtl",
+            lineNumberFormatter: (line) => line
+        });
+
+        const jsEditor = CodeMirror(document.getElementById('js-input'), {
+            mode: "javascript",
+            lineNumbers: true,
+            theme: "default",
+            direction: "rtl",
+            lineNumberFormatter: (line) => line
         });
 
         // مدیریت تب‌ها
-        document.querySelectorAll('.tab-btn').forEach(tab => {
+        const tabs = document.querySelectorAll('.tab-btn');
+        const codeInputs = document.querySelectorAll('.code-input');
+
+        tabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                document.querySelector('.tab-btn.active').classList.remove('active');
+                tabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                document.querySelector('.code-input.active').classList.remove('active');
-                document.getElementById(`${tab.dataset.tab}-input`).classList.add('active');
+                codeInputs.forEach(input => input.style.display = 'none');
+                document.getElementById(`${tab.dataset.tab}-input`).style.display = 'block';
             });
         });
 
-        // Undo/Redo
-        document.getElementById('undo-btn').addEventListener('click', () => editors.html.undo());
-        document.getElementById('redo-btn').addEventListener('click', () => editors.html.redo());
+        // اجرای کد
+        document.getElementById('run-btn').addEventListener('click', function () {
+            const htmlCode = htmlEditor.getValue();
+            const cssCode = `<style>${cssEditor.getValue()}</style>`;
+            const jsCode = `<script>${jsEditor.getValue()}<\/script>`;
+            const fullCode = `${htmlCode}${cssCode}${jsCode}`;
 
-        // افزودن تصاویر
-        document.getElementById('file-upload').addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                const img = `<img src="${event.target.result}" alt="Uploaded Image">`;
-                editors.html.setValue(editors.html.getValue() + img);
-            };
-            reader.readAsDataURL(file);
+            const previewFrame = document.getElementById('preview');
+            previewFrame.contentDocument.open();
+            previewFrame.contentDocument.write(fullCode);
+            previewFrame.contentDocument.close();
         });
 
-        // ذخیره‌سازی کد
-        document.getElementById('save-btn').addEventListener('click', () => {
-            localStorage.setItem('savedCode', JSON.stringify({
-                html: editors.html.getValue(),
-                css: editors.css.getValue(),
-                js: editors.js.getValue(),
-                md: editors.md.getValue()
-            }));
+        // ذخیره‌سازی کد در localStorage
+        document.getElementById('save-btn').addEventListener('click', function () {
+            const code = {
+                html: htmlEditor.getValue(),
+                css: cssEditor.getValue(),
+                js: jsEditor.getValue()
+            };
+            localStorage.setItem('savedCode', JSON.stringify(code));
             alert('کد با موفقیت ذخیره شد!');
         });
 
-        // دانلود کد
-        document.getElementById('download-btn').addEventListener('click', () => {
-            const blob = new Blob([editors.html.getValue()], { type: 'text/html' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'code.html';
-            link.click();
+        // دانلود کد به‌صورت فایل HTML
+        document.getElementById('download-btn').addEventListener('click', function () {
+            const htmlCode = htmlEditor.getValue();
+            const cssCode = `<style>${cssEditor.getValue()}</style>`;
+            const jsCode = `<script>${jsEditor.getValue()}<\/script>`;
+            const fullCode = `${htmlCode}${cssCode}${jsCode}`;
+
+            const blob = new Blob([fullCode], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'code.html';
+            a.click();
+            URL.revokeObjectURL(url);
         });
 
-        // بارگذاری کد ذخیره‌شده
+        // خروج
+        document.getElementById('exit-btn').addEventListener('click', function () {
+            if (confirm('آیا مطمئن هستید که می‌خواهید خارج شوید؟')) {
+                window.close();
+            }
+        });
+
+        // بارگذاری کد ذخیره‌شده از localStorage
         const savedCode = JSON.parse(localStorage.getItem('savedCode'));
         if (savedCode) {
-            editors.html.setValue(savedCode.html);
-            editors.css.setValue(savedCode.css);
-            editors.js.setValue(savedCode.js);
-            editors.md.setValue(savedCode.md);
+            htmlEditor.setValue(savedCode.html);
+            cssEditor.setValue(savedCode.css);
+            jsEditor.setValue(savedCode.js);
         }
     </script>
 
